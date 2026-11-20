@@ -83,7 +83,8 @@ const ls={get(k,d){try{const v=localStorage.getItem("varenie_"+k);return v?JSON.
 let cfg={key:"",model:"gemini-3.5-flash-lite",makraKey:"",stores:["Tesco"],club:true,pantry:"soľ, korenie, olej, múka, cukor, cesnak, ryža, cestoviny",avoid:"cibuľa",gear:"sporák, rúra, air fryer Sencor SFR 3130BK (malý kôš asi 2,6 l, max 200 °C), rice cooker Hyundai RC 060 (len 0,6 l, naraz max 2 porcie ryže), toastovač",...ls.get("cfg",{})};
 if(cfg.gear==="sporák, rúra, air fryer"||cfg.gear==="sporák, rúra, air fryer, rice cooker, toastovač")cfg.gear="sporák, rúra, air fryer Sencor SFR 3130BK (malý kôš asi 2,6 l, max 200 °C), rice cooker Hyundai RC 060 (len 0,6 l, naraz max 2 porcie ryže), toastovač";
 if(cfg.avoid===undefined)cfg.avoid="cibuľa";
-let st={meal:null,portions:1,note:"",kcal:"",p:"",prep:false,days:5,people:1,...ls.get("form",{})};
+let st={meal:null,portions:1,note:"",notes:null,kcal:"",p:"",prep:false,days:5,people:1,...ls.get("form",{})};
+if(!st.notes){st.notes={r:"",o:"",v:st.note||""}}
 if(st.meal==="t"){st.meal="v";st.prep=true}
 let result=ls.get("result",null), checked=ls.get("checked",{}), saved=ls.get("saved",[]);
 let deals=null, dealsWeek="", makra=null, view="plan";
@@ -169,7 +170,7 @@ ${list}
 Doma už má: ${cfg.pantry||"základné korenie a olej"}. Tieto suroviny nekupuj.
 Kuchynské vybavenie: ${cfg.gear||"sporák, rúra"}.${/air ?fryer|fritéz/i.test(cfg.gear||"")?" Kde sa dá, uprednostni air fryer pred panvicou (mäso, zelenina, zemiaky) a v postupe uveď teplotu a čas.":""}${/rice ?cooker|ryžovar/i.test(cfg.gear||"")?" Ryžu (aj quinou či bulgur) var v rice cookeri, ale rešpektuj jeho objem: ak treba viac ryže, než sa doň zmestí, var ju v hrnci.":""} Pri spotrebičoch rešpektuj ich veľkosť: do malého air fryera daj jedlo na viac dávok alebo použi rúru. Používaj spotrebiče tak, aby bolo čo najmenej riadu a stania pri sporáku.
 ${cfg.avoid?`NIKDY nepoužívaj (ani ako prísadu, ani v omáčke): ${cfg.avoid}.`:""}
-Poznámka používateľa: ${st.note||"žiadna"}.
+Poznámka používateľa: ${st.notes[st.meal]||"žiadna"}.
 Pravidlá: jednoduché jedlá, max. ${st.prep?"90":"45"} min. Uprednostni lacné a sýte. Kalórie a makrá počítaj reálne podľa množstiev. Ak surovina nie je v akcii, aj tak ju môžeš použiť, ale označ deal:null a odhadni cenu v bežnom slovenskom obchode. Na dochutenie smelo pridaj aj lacné veci mimo akcie, ktoré jedlu dodajú chuť: koreniny (paprika, rasca, oregano, chilli, kurkuma a pod.), bylinky, citrón, horčica, paradajkový pretlak, bujón. Vyber najlacnejšie bežné balenie (napr. vlastná značka obchodu), cenu odhadni reálne a spolu na dochutenie neminú viac ako asi 3 €. Kúp len to, čo nie je v zozname „Doma už má“.
 Vráť iba JSON: {"options":[{"name":string,"time_min":number,"portions":number,"per_portion":{"kcal":number,"p":number,"c":number,"f":number},"ingredients":[{"name":string,"amount":string (napr. "500 g"),"deal":number|null (id z akcií),"packs":number (koľko balení kúpiť, len pri deal),"est_price":number|null (len keď deal je null),"pantry":boolean}],"steps":[string]}]}`;
   try{
@@ -221,7 +222,7 @@ function render(){
     <label>Obchody</label><div class="chips">${STORES.filter(s=>stores.includes(s)).map(s=>`<button class="chip ${cfg.stores.includes(s)?"on":""}" data-store="${s}">${s}</button>`).join("")}</div>
     <div class="g2"><div><label>kcal na porciu</label><input type="text" inputmode="decimal" id="fk" value="${esc(st.kcal)}" placeholder="${t.src==="Makrá"?t.kcal:"auto"}"></div>
     <div><label>bielkoviny (g)</label><input type="text" inputmode="decimal" id="fp" value="${esc(st.p)}" placeholder="${t.src==="Makrá"?t.p:"auto"}"></div></div>
-    <label>Poznámka</label><input type="text" id="fn" value="${esc(st.note)}" placeholder="napr. bez rýb, rýchlo, mám kuracie prsia">
+    <label>Poznámka k jedlu „${MEALS.find(m=>m[0]===st.meal)[1]}“</label><input type="text" id="fn" value="${esc(st.notes[st.meal]||"")}" placeholder="napr. bez rýb, rýchlo, mám kuracie prsia">
     <button class="btn w" style="margin-top:16px" id="go" ${deals?"":"disabled"}>${deals?"Navrhnúť jedlá z akcií":"Načítavam akcie…"}</button>
     <div id="amsg"></div>
     <div class="sm mut" style="margin-top:10px">${deals?`${deals.filter(d=>cfg.stores.includes(d.store)).length} potravín v akcii${dealsWeek?` · leták ${esc(dealsWeek)}`:""}${cfg.club&&cfg.stores.includes("Tesco")?" · Tesco ceny s kartou −15 %":""}`:""}</div></div>`;
@@ -230,7 +231,7 @@ function render(){
   $("#main").innerHTML=h;
   $("#fk").oninput=e=>{st.kcal=e.target.value;ls.set("form",st)};
   $("#fp").oninput=e=>{st.p=e.target.value;ls.set("form",st)};
-  $("#fn").oninput=e=>{st.note=e.target.value;ls.set("form",st)};
+  $("#fn").oninput=e=>{st.notes[st.meal]=e.target.value;ls.set("form",st)};
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
