@@ -158,7 +158,7 @@ Doma už má: ${cfg.pantry||"základné korenie a olej"}. Tieto suroviny nekupuj
 ${cfg.avoid?`NIKDY nepoužívaj (ani ako prísadu, ani v omáčke): ${cfg.avoid}.`:""}
 Poznámka používateľa: ${st.note||"žiadna"}.
 Pravidlá: jednoduché jedlá, max. ${st.prep?"90":"45"} min. Uprednostni lacné a sýte. Kalórie a makrá počítaj reálne podľa množstiev. Ak surovinu nie je v akcii, aj tak ju môžeš použiť, ale označ deal:null a odhadni cenu v bežnom slovenskom obchode.
-Vráť iba JSON: {"options":[{"name":string,"why":string (1 veta, prečo je to dobrá voľba),"time_min":number,"portions":number,"per_portion":{"kcal":number,"p":number,"c":number,"f":number},"ingredients":[{"name":string,"amount":string (napr. "500 g"),"deal":number|null (id z akcií),"packs":number (koľko balení kúpiť, len pri deal),"est_price":number|null (len keď deal je null),"pantry":boolean}],"steps":[string]}]}`;
+Vráť iba JSON: {"options":[{"name":string,"time_min":number,"portions":number,"per_portion":{"kcal":number,"p":number,"c":number,"f":number},"ingredients":[{"name":string,"amount":string (napr. "500 g"),"deal":number|null (id z akcií),"packs":number (koľko balení kúpiť, len pri deal),"est_price":number|null (len keď deal je null),"pantry":boolean}],"steps":[string]}]}`;
   try{
     const d=await ai(prompt);
     const opts=(d.options||[]).filter(o=>o&&o.name&&Array.isArray(o.ingredients)).map(o=>({...o,ingredients:o.ingredients.map(x=>{
@@ -182,7 +182,6 @@ function optCard(o,oi,savedIdx){
   return `<div class="card opt"><h3>${esc(o.name)}</h3>
    <div class="meta"><span><b>${Math.round(pp.kcal||0)}</b> kcal</span><span><b>${Math.round(pp.p||0)} g</b> bielkovín</span><span>${o.portions||1}× ${(o.portions||1)>4?"porcií":(o.portions||1)>1?"porcie":"porcia"}</span>${o.time_min?`<span>${o.time_min} min</span>`:""}</div>
    ${t.kcal&&savedIdx==null?`<div class="sm" style="color:${Math.abs((pp.kcal||0)-t.kcal)<=t.kcal*.15?"var(--ok)":"var(--mut)"}">cieľ ${t.kcal} kcal${t.p?` / ${t.p} g bielkovín`:""}</div>`:""}
-   ${o.why?`<p class="why">${esc(o.why)}</p>`:""}
    <h2 style="margin-top:16px">Nákup <span class="mut sm" style="font-weight:400">${eur(c.deal+c.other)}${c.other?" (odhad)":""}</span></h2>
    ${buy.map((x,i)=>{const id=key+"-"+i,on=!!checked[id];return `<div class="row ${on?"done":""}"><button class="chk ${on?"on":""}" data-chk="${id}" aria-label="Kúpené"></button>
      <div class="grow">${esc(x.name)} <span class="mut sm">${esc(x.amount)}</span><br>${x.deal?`<span class="sm mut">${esc(x.deal.store)}: ${esc(x.deal.name)} ${esc(x.deal.unit||"")}${x.packs>1?` × ${x.packs}`:""}</span><span class="tag deal">akcia</span>`:`<span class="tag">mimo akcie</span>`}</div>
