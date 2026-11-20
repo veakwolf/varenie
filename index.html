@@ -171,6 +171,7 @@ Vráť iba JSON: {"options":[{"name":string,"why":string (1 veta, prečo je to d
   }catch(e){box.innerHTML=`<div class="msg err">Nepodarilo sa: ${esc(e.message)}</div>`}
   finally{const b=$("#go");if(b)b.disabled=false}
 }
+const saveAmt=o=>o.ingredients.reduce((a,x)=>x.deal&&!x.pantry?a+Math.max(0,(x.deal.old_price||x.deal.price)-effPrice(x.deal))*x.packs:a,0);
 const cost=o=>o.ingredients.reduce((a,x)=>{if(x.pantry)return a;if(x.deal)a.deal+=effPrice(x.deal)*x.packs;else if(x.est)a.other+=x.est;return a},{deal:0,other:0});
 
 // ---------- render
@@ -186,6 +187,7 @@ function optCard(o,oi,savedIdx){
    ${buy.map((x,i)=>{const id=key+"-"+i,on=!!checked[id];return `<div class="row ${on?"done":""}"><button class="chk ${on?"on":""}" data-chk="${id}" aria-label="Kúpené"></button>
      <div class="grow">${esc(x.name)} <span class="mut sm">${esc(x.amount)}</span><br>${x.deal?`<span class="sm mut">${esc(x.deal.store)}: ${esc(x.deal.name)} ${esc(x.deal.unit||"")}${x.packs>1?` × ${x.packs}`:""}</span><span class="tag deal">akcia</span>`:`<span class="tag">mimo akcie</span>`}</div>
      <div class="pr">${x.deal?`${x.deal.old_price?`<s>${eur(x.deal.old_price*x.packs)}</s>`:""}${eur(effPrice(x.deal)*x.packs)}`:x.est?`~${eur(x.est)}`:""}</div></div>`}).join("")}
+   <div class="row" style="border-top:2px solid var(--line);font-weight:700"><div class="grow">Spolu${c.other?' <span class="mut sm" style="font-weight:400">(časť odhadom)</span>':''}<br><span class="mut sm" style="font-weight:400">${eur((c.deal+c.other)/(o.portions||1))} na porciu${saveAmt(o)>0.005?` · ušetríš ${eur(saveAmt(o))}`:""}</span></div><div class="pr" style="font-size:20px">${eur(c.deal+c.other)}</div></div>
    ${home.length?`<div class="sm mut" style="margin-top:8px">Z domu: ${home.map(x=>esc(x.name)).join(", ")}</div>`:""}
    <details><summary>Postup</summary><ol>${(o.steps||[]).map(s=>`<li>${esc(s)}</li>`).join("")}</ol></details>
    ${savedIdx==null?`<button class="btn g w" data-save="${oi}">Uložiť recept</button>`:`<button class="btn g w" data-unsave="${savedIdx}">Odstrániť z uložených</button>`}</div>`;
