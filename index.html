@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14110f">
+<meta name="theme-color" content="#131210">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Varenie">
@@ -12,7 +12,7 @@
 <title>Varenie</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#14110f;--card:#1e1a17;--card2:#2b2621;--line:#36302a;--txt:#f4eee6;--mut:#ab9f92;--acc:#f0884a;--on:#2a1406;--p:#74b9f2;--ok:#9fd36a;--bad:#ff7461;--disp:"Bricolage Grotesque",system-ui,sans-serif}
+:root{--bg:#131210;--card:#1c1a17;--card2:#292622;--line:#332f2a;--txt:#f3efe7;--mut:#aaa397;--acc:#b4e052;--on:#171a0b;--p:#74b9f2;--c:#f4bd50;--f:#f08a98;--ok:#b4e052;--bad:#ff7461;--disp:"Bricolage Grotesque",system-ui,sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
 button,input,textarea{font:inherit;color:inherit}
@@ -52,7 +52,7 @@ input:focus,textarea:focus{border-color:var(--acc)}
 .row .pr{white-space:nowrap;text-align:right;font-weight:600}
 .row s{color:var(--mut);font-weight:400;font-size:13px;margin-right:4px}
 .tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:6px;background:var(--card2);color:var(--mut);margin-left:6px}
-.tag.deal{background:rgba(240,136,74,.18);color:var(--acc)}
+.tag.deal{background:rgba(180,224,82,.16);color:var(--acc)}
 .chk{width:24px;height:24px;border-radius:7px;border:2px solid var(--line);background:none;flex:none;margin-top:1px}
 .chk.on{background:var(--ok);border-color:var(--ok)}
 .done .grow{color:var(--mut);text-decoration:line-through}
@@ -182,7 +182,7 @@ function optCard(o,oi,savedIdx){
   const buy=o.ingredients.filter(x=>!x.pantry),home=o.ingredients.filter(x=>x.pantry);
   const key=savedIdx!=null?"s"+savedIdx:"r"+oi;
   return `<div class="card opt"><h3>${esc(o.name)}</h3>
-   <div class="meta"><span><b>${Math.round(pp.kcal||0)}</b> kcal</span><span>B <b>${Math.round(pp.p||0)} g</b></span><span>S <b>${Math.round(pp.c||0)} g</b></span><span>T <b>${Math.round(pp.f||0)} g</b></span><span>${o.portions||1}× ${(o.portions||1)>4?"porcií":(o.portions||1)>1?"porcie":"porcia"}</span>${o.time_min?`<span>${o.time_min} min</span>`:""}</div>
+   <div class="meta"><span><b>${Math.round(pp.kcal||0)}</b> kcal</span><span>B <b style="color:var(--p)">${Math.round(pp.p||0)} g</b></span><span>S <b style="color:var(--c)">${Math.round(pp.c||0)} g</b></span><span>T <b style="color:var(--f)">${Math.round(pp.f||0)} g</b></span><span>${o.portions||1}× ${(o.portions||1)>4?"porcií":(o.portions||1)>1?"porcie":"porcia"}</span>${o.time_min?`<span>${o.time_min} min</span>`:""}</div>
    ${t.kcal&&savedIdx==null?`<div class="sm" style="color:${Math.abs((pp.kcal||0)-t.kcal)<=t.kcal*.15?"var(--ok)":"var(--mut)"}">cieľ ${t.kcal} kcal${t.p?` · B ${t.p}`:""}${t.c!=null?` · S ${t.c}`:""}${t.f!=null?` · T ${t.f} g`:""}</div>`:""}
    <h2 style="margin-top:16px">Nákup <span class="mut sm" style="font-weight:400">${eur(c.deal+c.other)}${c.other?" (odhad)":""}</span></h2>
    ${buy.map((x,i)=>{const id=key+"-"+i,on=!!checked[id];return `<div class="row ${on?"done":""}"><button class="chk ${on?"on":""}" data-chk="${id}" aria-label="Kúpené"></button>
