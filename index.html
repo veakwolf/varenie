@@ -129,8 +129,9 @@ async function loadMakra(){
       const before=it.filter(e=>secOf(e)!=="v"),sm=(f)=>before.reduce((t,e)=>t+(e[f]||0),0),vv=it.filter(e=>secOf(e)==="v"),sv=f=>vv.reduce((t,e)=>t+(e[f]||0),0);
       (hist.d=hist.d||[]).push({kcal:gg.kcal-sm("kcal"),p:gg.p-sm("p"),c:(gg.c||0)-sm("c"),f:(gg.f||0)-sm("f"),ek:sv("kcal"),ep:sv("p")})}
     const avg=f=>hist.d?Math.round(hist.d.reduce((t,x)=>t+x[f],0)/hist.d.length):null;
+    const dinnerDays=(hist.d||[]).length;
     const dinner=hist.d&&hist.d.length>=3?{n:hist.d.length,kcal:avg("kcal"),p:avg("p"),c:avg("c"),f:avg("f"),ek:avg("ek"),ep:avg("ep")}:null;
-    makra={dinner,goal:g,eaten,left:{kcal:Math.round(g.kcal-eaten.kcal),p:Math.round(g.p-eaten.p),c:Math.round((g.c||0)-eaten.c),f:Math.round((g.f||0)-eaten.f)}};
+    makra={dinner,dinnerDays,goal:g,eaten,left:{kcal:Math.round(g.kcal-eaten.kcal),p:Math.round(g.p-eaten.p),c:Math.round((g.c||0)-eaten.c),f:Math.round((g.f||0)-eaten.f)}};
   }catch(e){makra={err:e.message}}
 }
 
@@ -210,7 +211,7 @@ function render(){
     h+=saved.length?saved.map((o,i)=>optCard(o,null,i)).join(""):`<p class="mut">Zatiaľ nič. Pri návrhu daj „Uložiť recept“.</p>`;
     $("#main").innerHTML=h;return;
   }
-  h+=`<div class="card">${makra&&makra.left?`${makra.dinner?`<div class="sm mut" style="margin-bottom:10px">Na večeru ti v priemere ostáva <b style="color:var(--txt)">${makra.dinner.kcal} kcal</b> a <b style="color:var(--txt)">${makra.dinner.p} g bielkovín</b> (${makra.dinner.n} dní). Reálne zješ ${makra.dinner.ek} kcal a ${makra.dinner.ep} g.</div>`:""}<div class="sm mut">Makrá dnes</div><div class="target"><span><b>${Math.max(0,makra.left.kcal)}</b> <span class="mut sm">kcal zostáva</span></span><span><b>${Math.max(0,makra.left.p)} g</b> <span class="mut sm">bielkovín</span></span></div>`
+  h+=`<div class="card">${makra&&makra.left?`${!makra.dinner?`<div class="sm mut" style="margin-bottom:10px">Priemer na večeru: v zálohe Makrá som našiel ${makra.dinnerDays} ${makra.dinnerDays===1?"deň":"dni"} so zapísanou večerou (treba aspoň 3).</div>`:""}${makra.dinner?`<div class="sm mut" style="margin-bottom:10px">Na večeru ti v priemere ostáva <b style="color:var(--txt)">${makra.dinner.kcal} kcal</b> a <b style="color:var(--txt)">${makra.dinner.p} g bielkovín</b> (${makra.dinner.n} dní). Reálne zješ ${makra.dinner.ek} kcal a ${makra.dinner.ep} g.</div>`:""}<div class="sm mut">Makrá dnes</div><div class="target"><span><b>${Math.max(0,makra.left.kcal)}</b> <span class="mut sm">kcal zostáva</span></span><span><b>${Math.max(0,makra.left.p)} g</b> <span class="mut sm">bielkovín</span></span></div>`
      :makra&&makra.err?`<div class="sm" style="color:var(--bad)">Makrá: ${esc(makra.err)}</div>`:`<div class="sm mut">Prepoj Makrá v nastaveniach a cieľ sa vyplní sám podľa toho, čo ti dnes ostáva.</div>`}
     <label>Jedlo</label><div class="chips">${MEALS.map(([k,l])=>`<button class="chip ${k===st.meal?"on":""}" data-meal="${k}">${l}</button>`).join("")}</div>
     <label>Režim</label><div class="chips"><button class="chip ${!st.prep?"on":""}" data-prep="0">Jedno jedlo</button><button class="chip ${st.prep?"on":""}" data-prep="1">Meal prep</button></div>
