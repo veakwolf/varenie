@@ -80,7 +80,8 @@ const STORES=["Tesco","Lidl","Kaufland","Billa","Biedronka"];
 const MEALS=[["r","Raňajky"],["o","Obed"],["v","Večera"]];
 const SHARE={r:.25,o:.4,v:.35};
 const ls={get(k,d){try{const v=localStorage.getItem("varenie_"+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem("varenie_"+k,JSON.stringify(v))}catch(e){}}};
-let cfg={key:"",model:"gemini-3.5-flash-lite",makraKey:"",stores:["Tesco"],club:true,pantry:"soľ, korenie, olej, múka, cukor, cesnak, ryža, cestoviny",avoid:"cibuľa",gear:"sporák, rúra, air fryer",...ls.get("cfg",{})};
+let cfg={key:"",model:"gemini-3.5-flash-lite",makraKey:"",stores:["Tesco"],club:true,pantry:"soľ, korenie, olej, múka, cukor, cesnak, ryža, cestoviny",avoid:"cibuľa",gear:"sporák, rúra, air fryer, rice cooker, toastovač",...ls.get("cfg",{})};
+if(cfg.gear==="sporák, rúra, air fryer")cfg.gear="sporák, rúra, air fryer, rice cooker, toastovač";
 if(cfg.avoid===undefined)cfg.avoid="cibuľa";
 let st={meal:null,portions:1,note:"",kcal:"",p:"",prep:false,days:5,people:1,...ls.get("form",{})};
 if(st.meal==="t"){st.meal="v";st.prep=true}
@@ -155,7 +156,7 @@ ${t.kcal?`Cieľ na 1 porciu: približne ${t.kcal} kcal${t.p?`, bielkoviny aspoň
 Hlavné suroviny ber čo najviac z týchto aktuálnych akcií (formát: id|obchod|produkt|balenie|cena za balenie v €):
 ${list}
 Doma už má: ${cfg.pantry||"základné korenie a olej"}. Tieto suroviny nekupuj.
-Kuchynské vybavenie: ${cfg.gear||"sporák, rúra"}.${/air ?fryer|fritéz/i.test(cfg.gear||"")?" Kde sa dá, uprednostni air fryer pred panvicou (mäso, zelenina, zemiaky) a v postupe uveď teplotu a čas.":""}
+Kuchynské vybavenie: ${cfg.gear||"sporák, rúra"}.${/air ?fryer|fritéz/i.test(cfg.gear||"")?" Kde sa dá, uprednostni air fryer pred panvicou (mäso, zelenina, zemiaky) a v postupe uveď teplotu a čas.":""}${/rice ?cooker|ryžovar/i.test(cfg.gear||"")?" Ryžu (aj inú prílohu ako quinoa či bulgur) vždy var v rice cookeri.":""} Používaj spotrebiče tak, aby bolo čo najmenej riadu a stania pri sporáku.
 ${cfg.avoid?`NIKDY nepoužívaj (ani ako prísadu, ani v omáčke): ${cfg.avoid}.`:""}
 Poznámka používateľa: ${st.note||"žiadna"}.
 Pravidlá: jednoduché jedlá, max. ${st.prep?"90":"45"} min. Uprednostni lacné a sýte. Kalórie a makrá počítaj reálne podľa množstiev. Ak surovinu nie je v akcii, aj tak ju môžeš použiť, ale označ deal:null a odhadni cenu v bežnom slovenskom obchode.
