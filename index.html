@@ -77,10 +77,13 @@ const DEALS_URL="/akcie/deals.json";
 const SUPA="https://dlbgfzjgkuwubomihkux.supabase.co",SUPA_KEY="sb_publishable_mp28D-V0T8ZAHW410MStGw_KWIFq5Dw";
 const FOOD=["Mäso a ryby","Mliečne a vajcia","Ovocie a zelenina","Pečivo","Trvanlivé potraviny","Mrazené","Ostatné"];
 const STORES=["Tesco","Lidl","Kaufland","Billa","Biedronka"];
-const MEALS=[["r","Raňajky"],["o","Obed"],["v","Večera"],["t","Na týždeň (meal prep)"]];
+const MEALS=[["r","Raňajky"],["o","Obed"],["v","Večera"]];
+const SHARE={r:.25,o:.4,v:.35};
 const ls={get(k,d){try{const v=localStorage.getItem("varenie_"+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem("varenie_"+k,JSON.stringify(v))}catch(e){}}};
-let cfg={key:"",model:"gemini-3.5-flash-lite",makraKey:"",stores:["Tesco"],club:true,pantry:"soľ, korenie, olej, múka, cukor, cesnak, cibuľa, ryža, cestoviny",...ls.get("cfg",{})};
-let st={meal:null,portions:1,note:"",kcal:"",p:"",...ls.get("form",{})};
+let cfg={key:"",model:"gemini-3.5-flash-lite",makraKey:"",stores:["Tesco"],club:true,pantry:"soľ, korenie, olej, múka, cukor, cesnak, ryža, cestoviny",avoid:"cibuľa",...ls.get("cfg",{})};
+if(cfg.avoid===undefined)cfg.avoid="cibuľa";
+let st={meal:null,portions:1,note:"",kcal:"",p:"",prep:false,days:5,people:1,...ls.get("form",{})};
+if(st.meal==="t"){st.meal="v";st.prep=true}
 let result=ls.get("result",null), checked=ls.get("checked",{}), saved=ls.get("saved",[]);
 let deals=null, dealsWeek="", makra=null, view="plan";
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -133,7 +136,8 @@ async function ai(prompt){
 function target(){
   const k=num(st.kcal),p=num(st.p);
   if(k||p)return {kcal:k,p,src:"ručne"};
-  if(makra&&makra.left&&st.meal!=="t"){
+  if(makra&&makra.goal&&st.prep)return {kcal:Math.round(makra.goal.kcal*SHARE[st.meal]),p:Math.round(makra.goal.p*SHARE[st.meal]),src:"Makrá"};
+  if(makra&&makra.left){
     const share={r:.3,o:.45,v:1}[st.meal]||1;
     return {kcal:Math.max(250,Math.round(makra.left.kcal*share)),p:Math.max(15,Math.round(makra.left.p*share)),src:"Makrá"};
   }
@@ -144,15 +148,16 @@ async function suggest(){
   const pool=deals.filter(d=>cfg.stores.includes(d.store));
   if(!pool.length){box.innerHTML=`<div class="msg err">Pre vybrané obchody teraz nemám žiadne akcie na potraviny.</div>`;return}
   box.innerHTML=`<div class="msg"><span class="spin"></span>Skladám jedlá z akcií…</div>`;$("#go").disabled=true;
-  const t=target(),meal=MEALS.find(m=>m[0]===st.meal)[1],port=st.meal==="t"?Math.max(st.portions,4):st.portions;
+  const t=target(),meal=MEALS.find(m=>m[0]===st.meal)[1],port=st.prep?st.days*st.people:st.portions;
   const list=pool.map((d,i)=>`${i}|${d.store}|${d.name}${d.brand?" ("+d.brand+")":""}|${d.unit||""}|${effPrice(d).toFixed(2)}`).join("\n");
-  const prompt=`Si praktický kuchár a výživový poradca na Slovensku. Navrhni 3 rôzne jedlá typu "${meal}" pre ${port} ${port===1?"porciu":"porcie"}.
+  const prompt=`Si praktický kuchár a výživový poradca na Slovensku. ${st.prep?`Navrhni 3 rôzne jedlá na MEAL PREP: ${meal.toLowerCase()} na ${st.days} dní${st.people>1?` pre ${st.people} osoby`:""}, spolu ${port} porcií. Nakupuje sa dnes, varí sa raz v nedeľu a jedlo sa rozdelí do krabičiek na pondelok až ${["","","utorok","stredu","štvrtok","piatok","sobotu","nedeľu"][st.days]||"piatok"}. Jedlo musí vydržať v chladničke 4–5 dní (alebo sa dať zamraziť), dobre sa ohrievať v mikrovlnke a nesmie sa rozmočiť. Množstvá a počet balení počítaj na všetkých ${port} porcií.`:`Navrhni 3 rôzne jedlá typu "${meal}" pre ${port} ${port===1?"porciu":"porcie"}.`}
 ${t.kcal?`Cieľ na 1 porciu: približne ${t.kcal} kcal${t.p?` a aspoň ${t.p} g bielkovín`:""}.`:"Cieľ: vyvážené, sýte jedlo s dostatkom bielkovín."}
 Hlavné suroviny ber čo najviac z týchto aktuálnych akcií (formát: id|obchod|produkt|balenie|cena za balenie v €):
 ${list}
 Doma už má: ${cfg.pantry||"základné korenie a olej"}. Tieto suroviny nekupuj.
+${cfg.avoid?`NIKDY nepoužívaj (ani ako prísadu, ani v omáčke): ${cfg.avoid}.`:""}
 Poznámka používateľa: ${st.note||"žiadna"}.
-Pravidlá: jednoduché jedlá z bežnej slovenskej kuchyne, max. 45 min (pri meal prep max. 90 min). Uprednostni lacné a sýte. Kalórie a makrá počítaj reálne podľa množstiev. Ak surovinu nie je v akcii, aj tak ju môžeš použiť, ale označ deal:null a odhadni cenu v bežnom slovenskom obchode.
+Pravidlá: jednoduché jedlá, max. ${st.prep?"90":"45"} min. Uprednostni lacné a sýte. Kalórie a makrá počítaj reálne podľa množstiev. Ak surovinu nie je v akcii, aj tak ju môžeš použiť, ale označ deal:null a odhadni cenu v bežnom slovenskom obchode.
 Vráť iba JSON: {"options":[{"name":string,"why":string (1 veta, prečo je to dobrá voľba),"time_min":number,"portions":number,"per_portion":{"kcal":number,"p":number,"c":number,"f":number},"ingredients":[{"name":string,"amount":string (napr. "500 g"),"deal":number|null (id z akcií),"packs":number (koľko balení kúpiť, len pri deal),"est_price":number|null (len keď deal je null),"pantry":boolean}],"steps":[string]}]}`;
   try{
     const d=await ai(prompt);
@@ -174,7 +179,7 @@ function optCard(o,oi,savedIdx){
   const buy=o.ingredients.filter(x=>!x.pantry),home=o.ingredients.filter(x=>x.pantry);
   const key=savedIdx!=null?"s"+savedIdx:"r"+oi;
   return `<div class="card opt"><h3>${esc(o.name)}</h3>
-   <div class="meta"><span><b>${Math.round(pp.kcal||0)}</b> kcal</span><span><b>${Math.round(pp.p||0)} g</b> bielkovín</span><span>${o.portions||1}× porcia</span>${o.time_min?`<span>${o.time_min} min</span>`:""}</div>
+   <div class="meta"><span><b>${Math.round(pp.kcal||0)}</b> kcal</span><span><b>${Math.round(pp.p||0)} g</b> bielkovín</span><span>${o.portions||1}× ${(o.portions||1)>4?"porcií":(o.portions||1)>1?"porcie":"porcia"}</span>${o.time_min?`<span>${o.time_min} min</span>`:""}</div>
    ${t.kcal&&savedIdx==null?`<div class="sm" style="color:${Math.abs((pp.kcal||0)-t.kcal)<=t.kcal*.15?"var(--ok)":"var(--mut)"}">cieľ ${t.kcal} kcal${t.p?` / ${t.p} g bielkovín`:""}</div>`:""}
    ${o.why?`<p class="why">${esc(o.why)}</p>`:""}
    <h2 style="margin-top:16px">Nákup <span class="mut sm" style="font-weight:400">${eur(c.deal+c.other)}${c.other?" (odhad)":""}</span></h2>
@@ -195,7 +200,10 @@ function render(){
   h+=`<div class="card">${makra&&makra.left?`<div class="sm mut">Makrá dnes</div><div class="target"><span><b>${Math.max(0,makra.left.kcal)}</b> <span class="mut sm">kcal zostáva</span></span><span><b>${Math.max(0,makra.left.p)} g</b> <span class="mut sm">bielkovín</span></span></div>`
      :makra&&makra.err?`<div class="sm" style="color:var(--bad)">Makrá: ${esc(makra.err)}</div>`:`<div class="sm mut">Prepoj Makrá v nastaveniach a cieľ sa vyplní sám podľa toho, čo ti dnes ostáva.</div>`}
     <label>Jedlo</label><div class="chips">${MEALS.map(([k,l])=>`<button class="chip ${k===st.meal?"on":""}" data-meal="${k}">${l}</button>`).join("")}</div>
-    <label>Porcie</label><div class="chips">${[1,2,4,6].map(n=>`<button class="chip ${n===st.portions?"on":""}" data-port="${n}">${n}</button>`).join("")}</div>
+    <label>Režim</label><div class="chips"><button class="chip ${!st.prep?"on":""}" data-prep="0">Jedno jedlo</button><button class="chip ${st.prep?"on":""}" data-prep="1">Meal prep</button></div>
+    ${st.prep?`<label>Na koľko dní (od pondelka)</label><div class="chips">${[3,4,5,7].map(n=>`<button class="chip ${n===st.days?"on":""}" data-days="${n}">${n}</button>`).join("")}</div>
+     <label>Pre koľko osôb</label><div class="chips">${[1,2].map(n=>`<button class="chip ${n===st.people?"on":""}" data-people="${n}">${n}</button>`).join("")}</div>`
+    :`<label>Porcie</label><div class="chips">${[1,2,4,6].map(n=>`<button class="chip ${n===st.portions?"on":""}" data-port="${n}">${n}</button>`).join("")}</div>`}
     <label>Obchody</label><div class="chips">${STORES.filter(s=>stores.includes(s)).map(s=>`<button class="chip ${cfg.stores.includes(s)?"on":""}" data-store="${s}">${s}</button>`).join("")}</div>
     <div class="g2"><div><label>kcal na porciu</label><input type="text" inputmode="decimal" id="fk" value="${esc(st.kcal)}" placeholder="${t.src==="Makrá"?t.kcal:"auto"}"></div>
     <div><label>bielkoviny (g)</label><input type="text" inputmode="decimal" id="fp" value="${esc(st.p)}" placeholder="${t.src==="Makrá"?t.p:"auto"}"></div></div>
@@ -214,6 +222,9 @@ document.addEventListener("click",e=>{
   if(d.view){view=d.view;render()}
   else if(d.meal){st.meal=d.meal;ls.set("form",st);render()}
   else if(d.port){st.portions=+d.port;ls.set("form",st);render()}
+  else if(d.prep){st.prep=d.prep==="1";if(st.prep&&st.meal==="r")st.meal="v";ls.set("form",st);render()}
+  else if(d.days){st.days=+d.days;ls.set("form",st);render()}
+  else if(d.people){st.people=+d.people;ls.set("form",st);render()}
   else if(d.store){const s=cfg.stores;s.includes(d.store)?cfg.stores=s.filter(x=>x!==d.store):s.push(d.store);if(!cfg.stores.length)cfg.stores=[d.store];ls.set("cfg",cfg);render()}
   else if(b.id==="go")suggest();
   else if(d.chk){checked[d.chk]=!checked[d.chk];ls.set("checked",checked);render()}
@@ -231,11 +242,12 @@ $("#setBtn").onclick=()=>{
    <label>Kľúč zálohy z Makrá (ten istý ako pri krokoch)</label><input type="password" id="smk" value="${esc(cfg.makraKey)}" autocomplete="off">
    <p class="sm mut">Varenie si z neho len prečíta, koľko ti dnes ostáva kalórií a bielkovín. Do Makrá nič nezapisuje.</p>
    <label>Doma vždy mám</label><textarea id="sp">${esc(cfg.pantry)}</textarea>
+   <label>Nikdy nepoužívať</label><textarea id="sa" placeholder="napr. cibuľa, huby">${esc(cfg.avoid||"")}</textarea>
    <label>Tesco karta</label><div class="chips"><button class="chip ${cfg.club?"on":""}" id="sc">−15 % na akciové ceny v Tescu</button></div>
    <button class="btn w" style="margin-top:20px" data-close>Hotovo</button></div>`;
   sh.classList.add("open");
-  const save=()=>{cfg.key=$("#sk").value.trim();cfg.model=$("#sm").value.trim()||"gemini-3.5-flash-lite";cfg.makraKey=$("#smk").value.trim();cfg.pantry=$("#sp").value.trim();ls.set("cfg",cfg)};
-  ["#sk","#sm","#smk","#sp"].forEach(q=>$(q).oninput=save);
+  const save=()=>{cfg.key=$("#sk").value.trim();cfg.model=$("#sm").value.trim()||"gemini-3.5-flash-lite";cfg.makraKey=$("#smk").value.trim();cfg.pantry=$("#sp").value.trim();cfg.avoid=$("#sa").value.trim();ls.set("cfg",cfg)};
+  ["#sk","#sm","#smk","#sp","#sa"].forEach(q=>$(q).oninput=save);
   $("#sc").onclick=()=>{cfg.club=!cfg.club;ls.set("cfg",cfg);$("#sc").classList.toggle("on",cfg.club)};
 };
 
