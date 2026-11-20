@@ -147,11 +147,11 @@ async function ai(prompt){
 function target(){
   const k=num(st.kcal),p=num(st.p);
   if(k||p)return {kcal:k,p,c:null,f:null,src:"ručne"};
-  if(makra&&makra.dinner&&st.prep&&st.meal==="v"){const x=makra.dinner;return {kcal:Math.max(300,x.kcal),p:Math.max(20,x.p),c:Math.max(15,x.c),f:Math.max(8,x.f),src:"Makrá"}}
+  if(makra&&makra.dinner&&st.prep&&st.meal==="v"){const x=makra.dinner;return {kcal:Math.max(300,x.kcal),p:Math.min(80,Math.max(20,x.p)),c:Math.max(15,x.c),f:Math.max(8,x.f),src:"Makrá"}}
   if(makra&&makra.goal&&st.prep){const s=SHARE[st.meal];return {kcal:Math.round(makra.goal.kcal*s),p:Math.round(makra.goal.p*s),c:makra.goal.c?Math.round(makra.goal.c*s):null,f:makra.goal.f?Math.round(makra.goal.f*s):null,src:"Makrá"}}
   if(makra&&makra.left){
     const share={r:.3,o:.45,v:1}[st.meal]||1;
-    return {kcal:Math.max(250,Math.round(makra.left.kcal*share)),p:Math.max(15,Math.round(makra.left.p*share)),c:Math.max(10,Math.round(makra.left.c*share)),f:Math.max(5,Math.round(makra.left.f*share)),src:"Makrá"};
+    return {kcal:Math.max(250,Math.round(makra.left.kcal*share)),p:Math.min(80,Math.max(15,Math.round(makra.left.p*share))),c:Math.max(10,Math.round(makra.left.c*share)),f:Math.max(5,Math.round(makra.left.f*share)),src:"Makrá"};
   }
   return {kcal:null,p:null,src:null};
 }
