@@ -212,7 +212,8 @@ function render(){
     <button class="btn w" style="margin-top:16px" id="go" ${deals?"":"disabled"}>${deals?"Navrhnúť jedlá z akcií":"Načítavam akcie…"}</button>
     <div id="amsg"></div>
     <div class="sm mut" style="margin-top:10px">${deals?`${deals.filter(d=>cfg.stores.includes(d.store)).length} potravín v akcii${dealsWeek?` · leták ${esc(dealsWeek)}`:""}${cfg.club&&cfg.stores.includes("Tesco")?" · Tesco ceny s kartou −15 %":""}`:""}</div></div>`;
-  if(result)h+=`<h2>Návrhy <span class="mut sm" style="font-weight:400">${new Date(result.at).toLocaleString("sk-SK",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"})}</span></h2>`+result.opts.map((o,i)=>optCard(o,i)).join("");
+  if(result)h+=`<h2>Návrhy <span class="mut sm" style="font-weight:400">${new Date(result.at).toLocaleString("sk-SK",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"})}</span></h2>`+`<div class="chips" style="margin-bottom:12px">${[["","Pôvodne"],["price","Najlacnejšie"],["time","Najrýchlejšie"]].map(([k,l])=>`<button class="chip ${(st.sort||"")===k?"on":""}" data-sort="${k}">${l}</button>`).join("")}</div>`
+    +result.opts.map((o,i)=>[o,i]).sort((a,b)=>st.sort==="price"?(c=>c.deal+c.other)(cost(a[0]))-(c=>c.deal+c.other)(cost(b[0])):st.sort==="time"?(a[0].time_min||999)-(b[0].time_min||999):a[1]-b[1]).map(([o,i])=>optCard(o,i)).join("");
   $("#main").innerHTML=h;
   $("#fk").oninput=e=>{st.kcal=e.target.value;ls.set("form",st)};
   $("#fp").oninput=e=>{st.p=e.target.value;ls.set("form",st)};
@@ -222,6 +223,7 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(d.view){view=d.view;render()}
   else if(d.meal){st.meal=d.meal;ls.set("form",st);render()}
+  else if(d.sort!=null){st.sort=d.sort;ls.set("form",st);render()}
   else if(d.port){st.portions=+d.port;ls.set("form",st);render()}
   else if(d.prep){st.prep=d.prep==="1";if(st.prep&&st.meal==="r")st.meal="v";ls.set("form",st);render()}
   else if(d.days){st.days=+d.days;ls.set("form",st);render()}
